@@ -1,6 +1,12 @@
+# Dataset loading
 datasets
+
+# Embeddings and retrieval
 sentence-transformers
 faiss-cpu
-bitsandbytes
-accelerate
+
+# Language model
+torch
 transformers
+accelerate
+bitsandbytes
