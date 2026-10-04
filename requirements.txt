@@ -1,3 +1,6 @@
 datasets
 sentence-transformers
 faiss-cpu
+bitsandbytes
+accelerate
+transformers
