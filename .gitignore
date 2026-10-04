@@ -4,17 +4,32 @@ corpus/
 indexes/
 results/
 
-# Google Colab
+# Local model files and caches
+models/
+.cache/
+huggingface_cache/
+
+# Google Colab and Jupyter
 .ipynb_checkpoints/
+**/.ipynb_checkpoints/
 
 # Python
 __pycache__/
-*.pyc
+*.py[cod]
+*.pyo
 
 # Local environments
 .venv/
 venv/
+env/
 
-# Secrets
+# Secrets and local configuration
 .env
-*.env
+.env.*
+!.env.example
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
