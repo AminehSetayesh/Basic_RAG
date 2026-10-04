@@ -1,0 +1,20 @@
+# Generated project artifacts
+data/
+corpus/
+indexes/
+results/
+
+# Google Colab
+.ipynb_checkpoints/
+
+# Python
+__pycache__/
+*.pyc
+
+# Local environments
+.venv/
+venv/
+
+# Secrets
+.env
+*.env
