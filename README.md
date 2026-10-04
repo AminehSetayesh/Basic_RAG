@@ -1,12 +1,22 @@
 # Basic RAG
 
-A lightweight and reproducible implementation of a Retrieval-Augmented Generation (RAG) pipeline using HotpotQA, dense retrieval, FAISS, and a local Qwen2.5-7B-Instruct model.
+A lightweight, educational implementation of a Retrieval-Augmented Generation (RAG) pipeline using HotpotQA, dense retrieval, FAISS, and a locally stored Qwen2.5-7B-Instruct model.
 
-The project is developed incrementally, starting from a simple RAG baseline and providing a foundation for experimenting with more advanced retrieval and reasoning methods.
+The project is developed incrementally to provide a reproducible baseline and a foundation for exploring more advanced retrieval and reasoning methods.
 
-## Current Pipeline
+## Project Status
 
-The current implementation focuses on the retrieval component:
+The project currently includes:
+
+- Corpus construction and dense retrieval.
+- FAISS-based similarity search.
+- A Simple RAG pipeline that generates answers using retrieved context.
+- Prompt experiments comparing alternative answer-generation instructions.
+- A targeted experiment investigating the effect of increasing the retrieval depth.
+
+The experiments are intended for learning and error analysis. Results from the initial evaluation set are preliminary and should not be interpreted as definitive benchmark results.
+
+## Pipeline
 
 ```text
 HotpotQA
@@ -21,21 +31,27 @@ FAISS Index
    ↓
 Dense Retrieval
    ↓
-Retrieval Evaluation
+Retrieved Context
+   ↓
+Qwen2.5-7B-Instruct
+   ↓
+Generated Answer
+   ↓
+Evaluation and Error Analysis
 ```
-
-The next stage of the project will extend this retrieval pipeline into a complete Simple RAG system by connecting the retrieved context to the Qwen language model.
 
 ## Dataset
 
-The current implementation uses the **HotpotQA** dataset loaded directly from Hugging Face.
+The project uses the HotpotQA dataset loaded from Hugging Face.
 
-For the initial experiment:
+The initial configuration includes:
 
-- 100 samples are selected from the validation split.
-- 10 samples are used for the initial evaluation.
-- Each HotpotQA context paragraph is treated as one retrieval chunk.
-- Supporting facts are retained for evaluation but are not provided to the retriever.
+- 100 selected samples for corpus construction.
+- 10 questions for the initial evaluation.
+- Context paragraphs split into retrieval chunks.
+- Supporting facts retained for retrieval evaluation.
+
+The retrieval component uses the constructed corpus rather than searching the entire HotpotQA dataset at inference time.
 
 ## Embedding Model
 
@@ -43,74 +59,80 @@ The project uses:
 
 `sentence-transformers/all-MiniLM-L6-v2`
 
-Each corpus chunk is converted into a 384-dimensional normalized embedding.
+The model produces 384-dimensional embeddings. The embeddings are normalized before being indexed.
 
 ## Vector Retrieval
 
-FAISS is used for dense vector retrieval with:
+FAISS is used for dense similarity search with:
 
 `IndexFlatIP`
 
-Because the embeddings are normalized, inner product is equivalent to cosine similarity for retrieval.
+Because the embeddings are normalized, inner-product similarity corresponds to cosine similarity.
 
-The current default retrieval setting is:
+The default retrieval configuration is:
 
 ```text
 Top-k = 5
 ```
 
-## Retrieval Evaluation
+The retrieval experiments also investigate `top_k=10` for a targeted question.
 
-The initial retrieval evaluation uses:
+## Language Model
 
-- Recall@5
-- Retrieval Success Rate
+The generation component uses Qwen2.5-7B-Instruct with 8-bit quantization.
 
-A retrieved gold evidence chunk is identified using the HotpotQA supporting facts associated with each sample.
+The model is loaded locally and the model files are not included in this repository.
 
-### Initial Result
+Model inference requires a compatible environment with the necessary dependencies and sufficient memory. The notebooks are designed for Google Colab, but runtime availability and resource limits may vary.
 
-On the initial 10-question evaluation set:
+## Notebooks
 
-```text
-Mean Recall@5        : 0.80
-Retrieval Success Rate : 1.00
-```
+### `01_build_corpus_and_index.ipynb`
 
-These results are an initial development baseline on a small evaluation set and should not be interpreted as a final benchmark result.
+Builds the initial dataset subset, constructs the retrieval corpus, generates embeddings, creates the FAISS index, and evaluates retrieval performance.
 
-## Project Structure
+### `02_simple_rag.ipynb`
 
-```text
-Basic_RAG/
-├── notebooks/
-│   └── 01_build_corpus_and_index.ipynb
-├── .gitignore
-├── requirements.txt
-└── README.md
-```
+Loads the previously generated corpus and index, retrieves relevant chunks, generates answers with Qwen, and evaluates the initial Simple RAG baseline.
 
-The following directories are generated during execution and are excluded from version control:
+### `03_rag_experiments.ipynb`
 
-```text
-data/
-corpus/
-indexes/
-results/
-```
+Investigates alternative prompt designs, compares generated answers, inspects retrieved evidence for selected questions, and examines a targeted change in retrieval depth.
 
-## Running the Project
+## Initial Results
 
-The project is designed to run in Google Colab.
+The project has been evaluated on an initial set of 10 HotpotQA questions. The results are preliminary and are intended to support experimentation and error analysis rather than provide a definitive benchmark.
 
-The notebook downloads HotpotQA directly from Hugging Face and generates the required corpus, embeddings, FAISS index, and retrieval evaluation results.
+### Retrieval Evaluation
 
-## Reproducibility
+The initial retrieval evaluation achieved:
 
-The initial sample selection uses a fixed random seed:
+- Mean Recall@5: 0.80
+- Retrieval Success Rate: 1.00
 
-```text
-Random seed = 42
-```
+The retrieved context contained the reference answer for 9 out of 10 questions (90%). This indicates that the retrieval component often finds relevant information, although successful retrieval does not necessarily guarantee a correct generated answer.
 
-The selected samples and evaluation samples are therefore reproducible when the notebook is executed with the same configuration.
+### Generation and Prompt Experiments
+
+Three alternative prompt designs were compared with the baseline Simple RAG system.
+
+| Method | Exact Match (EM) | Mean Token F1 |
+|---|---:|---:|
+| Baseline Simple RAG | 0% | 12.31% |
+| Concise RAG | 40% | 45% |
+| Evidence-Focused RAG | 40% | 45% |
+| Precise Answer RAG | 40% | 40% |
+
+The prompt experiments improved answer quality on this initial evaluation set compared with the baseline. The Concise RAG and Evidence-Focused RAG configurations achieved the highest mean token F1, while the Precise Answer RAG prompt produced exact matches on some questions but also introduced errors on others.
+
+The Concise RAG configuration is therefore retained as the current default for further experiments. However, the evaluation set is small, and the results do not establish that one prompt design will consistently outperform the others.
+
+### Error Analysis and Retrieval Depth
+
+Question-level analysis revealed several distinct error types, including answers that were present in the retrieved context but were not correctly generated, answers expressed in wording different from the reference, and answers missing from the top-5 retrieved chunks.
+
+A targeted retrieval-depth experiment also showed that increasing the number of retrieved chunks from 5 to 10 enabled the system to find the reference answer for a question that the top-5 retrieval had missed. This suggests that retrieval depth can affect answer availability, although retrieving more context does not automatically guarantee better generation.
+
+### Limitations
+
+These findings are based on only 10 evaluation questions. The results are useful for identifying failure cases and guiding subsequent experiments, but larger-scale evaluation is required before drawing reliable conclusions about overall performance.
